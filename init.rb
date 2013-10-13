@@ -12,5 +12,7 @@ Redmine::Plugin.register :redmine_travelsystem do
     ProjectsHelper.send :include, ProjectsHelperPatch
     require 'news_to_all_members'
     Mailer.send :include, NewsSendNotificationToAllMembers
+	require 'new_mail_handler'
+	MailHandler.send :include, NewMailHandler
   end
 end
