@@ -1,5 +1,7 @@
 # English strings go here for Rails i18n
 en:
+  button_submit: "Submit/Save"
+  button_update: "Update/Edit"
   label_home_old: Task management system
   text_login_style: First letter of first name + full last name
   text_firstname_style: First Name in Russian
