@@ -14,5 +14,7 @@ Redmine::Plugin.register :redmine_travelsystem do
     Mailer.send :include, NewsSendNotificationToAllMembers
 	require 'new_mail_handler'
 	MailHandler.send :include, NewMailHandler
+	#require 'custom_logger'
+	require 'patches'
   end
 end

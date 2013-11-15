@@ -14,7 +14,7 @@ module NewMailHandler
         if email.html_part
           obj.attachments << Attachment.create(:container => obj,
                                                :file => email.html_part.body.decoded,
-                                               :filename => 'EMAIL-BODY'+Date.today.strftime("%Y-%m-%d")+'.html',
+                                               :filename => "EMAIL-BODY-#{Date.today.strftime('%Y-%m-%d')}.html",
                                                :author => user,
                                                :content_type => 'text/html')
         end 
@@ -38,6 +38,24 @@ module NewMailHandler
         @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
         @plain_text_body
       end 
+
+	  def cleanup_body(body)
+        if email.text_part.nil? && email.html_part.nil?
+          body = ''
+        else
+          delimiters = Setting.mail_handler_body_delimiters.to_s.split(/[\r\n]+/).reject(&:blank?).map {|s| Regexp.escape(s)}
+          unless delimiters.empty?
+            regex = Regexp.new("^[> ]*(#{ delimiters.join('|') })\s*[\r\n].*", Regexp::MULTILINE)
+            body = body.gsub(regex, '') 
+          end 
+          body.strip
+        end 
+       end 
+			
+
+      def logger
+        ActionMailer::Base.logger ? ActionMailer::Base.logger : Rails.logger
+      end
     end
   end
 end
