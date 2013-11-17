@@ -10,10 +10,10 @@ Redmine::Plugin.register :redmine_travelsystem do
   Rails.configuration.to_prepare do
     require 'projects_helper_patch'
     ProjectsHelper.send :include, ProjectsHelperPatch
-    require 'news_to_all_members'
-    Mailer.send :include, NewsSendNotificationToAllMembers
-	require 'new_mail_handler'
-	MailHandler.send :include, NewMailHandler
+    require 'mailer_patch'
+    Mailer.send :include, MailerPatch
+	require 'mail_handler_patch'
+	MailHandler.send :include, MailHandlerPatch 
 	#require 'custom_logger'
 	require 'patches'
   end
