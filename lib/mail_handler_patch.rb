@@ -44,8 +44,8 @@ module MailHandlerPatch
 # end
 
   module InstanceMethods
-    class UnauthorizedAction < StandardError; end
-    class MissingInformation < StandardError; end
+    UnauthorizedAction = MailHandler.const_get(:UnauthorizedAction)
+    MissingInformation = MailHandler.const_get(:MissingInformation)
 
       def logger_with_tslogger
         ActionMailer::Base.logger ? ActionMailer::Base.logger : Rails.logger
@@ -124,9 +124,9 @@ module MailHandlerPatch
       end
 
       private
-      MESSAGE_ID_RE = %r{^<?redmine\.([a-z0-9_]+)\-(\d+)\.\d+@}
-      ISSUE_REPLY_SUBJECT_RE = %r{\[[^\]]*#(\d+)\]}
-      MESSAGE_REPLY_SUBJECT_RE = %r{\[[^\]]*msg(\d+)\]}
+	  MESSAGE_ID_RE = MailHandler.const_get(:MESSAGE_ID_RE)
+	  ISSUE_REPLY_SUBJECT_RE = MailHandler.const_get(:ISSUE_REPLY_SUBJECT_RE)
+	  MESSAGE_REPLY_SUBJECT_RE = MailHandler.const_get(:MESSAGE_REPLY_SUBJECT_RE)
 
       def dispatch_with_tsdispatch
         if logger; logger.info "MailHandler: dispatch_with_tsdispatch at #{__FILE__}:#{__LINE__}"; end 
