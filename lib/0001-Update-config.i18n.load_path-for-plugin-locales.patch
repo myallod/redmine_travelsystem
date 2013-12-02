@@ -1,0 +1,28 @@
+From 53645db4acc6b6457bdd9e2800473aa517ffb244 Mon Sep 17 00:00:00 2001
+From: YAEGASHI Takeshi <t@keshi.org>
+Date: Sun, 6 Jan 2013 18:14:00 +0900
+Subject: [PATCH] Update config.i18n.load_path for plugin locales.
+
+I18n.load_path is overridden with system locales by an after_initialize
+hook in active_support/i18n_railtie.rb.
+---
+ lib/redmine/plugin.rb |    3 ++-
+ 1 file changed, 2 insertions(+), 1 deletion(-)
+
+diff --git a/lib/redmine/plugin.rb b/lib/redmine/plugin.rb
+index 0b7a4f6..aa54eb9 100644
+--- a/lib/redmine/plugin.rb
++++ b/lib/redmine/plugin.rb
+@@ -76,7 +76,8 @@ module Redmine #:nodoc:
+ 
+       # Adds plugin locales if any
+       # YAML translation files should be found under <plugin>/config/locales/
+-      ::I18n.load_path += Dir.glob(File.join(p.directory, 'config', 'locales', '*.yml'))
++      Rails.application.config.i18n.load_path +=
++        Dir.glob(File.join(p.directory, 'config', 'locales', '*.yml'))
+ 
+       # Prepends the app/views directory of the plugin to the view path
+       view_path = File.join(p.directory, 'app', 'views')
+-- 
+1.7.10.2 (Apple Git-33)
+

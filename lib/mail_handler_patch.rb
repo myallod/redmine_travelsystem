@@ -2,7 +2,6 @@ require_dependency 'mail_handler'
 
 module MailHandlerPatch
   def self.included(base)
-	#base.extend(ClassMethods)
     base.send(:include, InstanceMethods)
 	base.class_eval do
       unloadable
@@ -20,28 +19,6 @@ module MailHandlerPatch
       alias_method_chain :add_user_to_group, :tsaddusertogroup
     end
   end
-
-#  module ClassMethods
-#    def receive(email, options={})
-#      @@handler_options = options.dup
-#      @@handler_options[:issue] ||= {}
-#
-#      if @@handler_options[:allow_override].is_a?(String)
-#        @@handler_options[:allow_override] = @@handler_options[:allow_override].split(',').collect(&:strip)
-#      end
-#      @@handler_options[:allow_override] ||= []
-#      @@handler_options[:allow_override] << 'project' unless @@handler_options[:issue].has_key?(:project)
-#      @@handler_options[:allow_override] << 'status' unless @@handler_options[:issue].has_key?(:status)
-# 
-#      @@handler_options[:no_account_notice] = (@@handler_options[:no_account_notice].to_s == '1')
-#      @@handler_options[:no_notification] = (@@handler_options[:no_notification].to_s == '1')
-#      @@handler_options[:no_permission_check] = (@@handler_options[:no_permission_check].to_s == '1')
-# 
-#      email.force_encoding('ASCII-8BIT') if email.respond_to?(:force_encoding)
-#      super(email)
-#    end
-#	cattr_accessor :handler_options
-# end
 
   module InstanceMethods
     UnauthorizedAction = MailHandler.const_get(:UnauthorizedAction)

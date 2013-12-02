@@ -16,5 +16,6 @@ Redmine::Plugin.register :redmine_travelsystem do
 	MailHandler.send :include, MailHandlerPatch 
 	#require 'custom_logger'
 	require 'patches'
+	require 'warning_message_hook'
   end
 end

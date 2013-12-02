@@ -6,3 +6,4 @@ ru:
   text_firstname_style: "По-русски"
   text_lastname_style: "По-русски"
   text_mail_style: "Корпоративный персональный емэйл"
+  text_plugin_not_usable: "Неверная конфигурация плагина. Следует применить патч http://www.redmine.org/attachments/download/8741/0001-Update-config.i18n.load_path-for-plugin-locales.patch"
