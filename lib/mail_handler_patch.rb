@@ -266,46 +266,25 @@ module MailHandlerPatch
       end 
     end
 
-	#plain_text_body
-	
-	#ORIGINAL FROM 2.2.2
-    ##def plain_text_body
-    ##  return @plain_text_body unless @plain_text_body.nil?
- 
-    ##  part = email.text_part || email.html_part || email
-    ##  @plain_text_body = Redmine::CodesetUtil.to_utf8(part.body.decoded, part.charset)
- 
-    ##  # strip html tags and remove doctype directive
-    ##  @plain_text_body = strip_tags(@plain_text_body.strip)
-    ##  @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
-    ##  @plain_text_body
-    ##end
+    def target_project_with_tstargetproject
+      # TODO: other ways to specify project:
+      #     # * parse the email To field
+      #         # * specific project (eg. Setting.mail_handler_target_project)
+      target = Project.find_by_identifier(get_keyword(:project))
+      if target.nil?
+        # Invalid project keyword, use the project specified as the default one
+        default_project = @ho[:issue][:project]
+        if default_project.present?
+          target = Project.find_by_identifier(default_project)
+        end
+      end
+      raise MissingInformation.new("Unable to determine target project: #{:project}") if target.nil?
+      target
+    end
 
-	#CHANGES TO OUR NEEDS
-    
-	##def plain_text_body_with_tsplaintextbody
-    ##  if logger; logger.info "MailHandler: plain_text_body_with_tsplaintextbody at #{__FILE__}:#{__LINE__}"; end 
-    ##  return @plain_text_body unless @plain_text_body.nil?
-    ##  part = email.text_part || email.html_part || email
-    ##  case part.charset
-    ##    when 'ks_c_5601-1987'
-    ##      pcharset = 'CP949'
-    ##    else
-    ##      pcharset = part.charset
-    ##  end 
-    ##  @plain_text_body = Redmine::CodesetUtil.to_utf8(part.body.decoded, pcharset)
-
-    ##  # strip html tags and remove doctype directive
-    ##  unless email.text_part
-    ##    @plain_text_body = strip_tags(@plain_text_body.strip)
-    ##  end 
-    ##  @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
-    ##  @plain_text_body
-    ##end 
-	
-	#REDMINE 2.4.2
     def plain_text_body_with_tsplaintextbody
       return @plain_text_body unless @plain_text_body.nil?
+
       parts = if (text_parts = email.all_parts.select {|p| p.mime_type == 'text/plain'}).present?
                 text_parts
               elsif (html_parts = email.all_parts.select {|p| p.mime_type == 'text/html'}).present?
@@ -318,7 +297,13 @@ module MailHandlerPatch
         part.header[:content_disposition].try(:disposition_type) == 'attachment'
       end
 
-      @plain_text_body = parts.map {|p| p.charset = 'CP949' if p.charset == 'ks_c_5601-1987'; Redmine::CodesetUtil.to_utf8(p.body.decoded, p.charset)}.join("\r\n")
+	  @plain_text_body = parts.map do |p|
+	    body_charset = p.charset.respond_to?(:force_encoding) ?
+	      Mail::RubyVer.pick_encoding(p.charset).to_s : p.charset
+        #body_charset = 'CP949' if body_charset == 'ks_c_5601-1987'
+	    Redmine::CodesetUtil.to_utf8(p.body.decoded, body_charset)
+	  end.join("\r\n")
+
 
       # strip html tags and remove doctype directive
       if parts.any? {|p| p.mime_type == 'text/html'}
@@ -328,25 +313,6 @@ module MailHandlerPatch
 
       @plain_text_body
     end
-
-    def cleanup_body_with_tscleanupbody(body)
-      #if logger; logger.info "MailHandler: cleanup_body_with_tscleanupbody: body = #{body} at #{__FILE__}:#{__LINE__}"; end 
-      if email.text_part.nil? && email.html_part.nil?
-        #if logger; logger.info "MailHandler: email.text_part.nil && email.html_part.nil at #{__FILE__}:#{__LINE__}"; end 
-        if @email.header['Content-Type'] && !@email.header['Content-Type'].to_s.match(%r{text/(html|plain)})
-          if logger; logger.info "MailHandler: cleanup_body: Content-Type = #{@email.header['Content-Type']}, body set empty at #{__FILE__}:#{__LINE__}"; end
-          body = ''
-        end
-      else
-        delimiters = Setting.mail_handler_body_delimiters.to_s.split(/[\r\n]+/).reject(&:blank?).map {|s| Regexp.escape(s)}
-        #if logger; logger.info "MailHandler: delimiters = #{delimiters.inspect} at #{__FILE__}:#{__LINE__}"; end 
-        unless delimiters.empty?
-          regex = Regexp.new("^[> ]*(#{ delimiters.join('|') })\s*[\r\n].*", Regexp::MULTILINE)
-          body = body.gsub(regex, '') 
-        end 
-      end 
-      body.strip
-    end 
 
     def create_user_from_email_with_tscreateuserfromemail
       if logger; logger.info "MailHandler: create_user_from_email_with_tscreateuserwithemail at #{__FILE__}:#{__LINE__}"; end 
@@ -385,21 +351,23 @@ module MailHandlerPatch
       end
     end
 
-	#MODIFIED
-    def target_project_with_tstargetproject
-      # TODO: other ways to specify project:
-      #     # * parse the email To field
-      #         # * specific project (eg. Setting.mail_handler_target_project)
-      target = Project.find_by_identifier(get_keyword(:project))
-      if target.nil?
-        # Invalid project keyword, use the project specified as the default one
-        default_project = @@handler_options[:issue][:project]
-        if default_project.present?
-          target = Project.find_by_identifier(default_project)
+    def cleanup_body_with_tscleanupbody(body)
+      #if logger; logger.info "MailHandler: cleanup_body_with_tscleanupbody: body = #{body} at #{__FILE__}:#{__LINE__}"; end 
+      if email.text_part.nil? && email.html_part.nil?
+        #if logger; logger.info "MailHandler: email.text_part.nil && email.html_part.nil at #{__FILE__}:#{__LINE__}"; end 
+        if @email.header['Content-Type'] && !@email.header['Content-Type'].to_s.match(%r{text/(html|plain)})
+          if logger; logger.info "MailHandler: cleanup_body: Content-Type = #{@email.header['Content-Type']}, body set empty at #{__FILE__}:#{__LINE__}"; end
+          body = ''
         end
-      end
-      raise MissingInformation.new("Unable to determine target project: #{:project}") if target.nil?
-      target
-    end
+      else
+        delimiters = Setting.mail_handler_body_delimiters.to_s.split(/[\r\n]+/).reject(&:blank?).map {|s| Regexp.escape(s)}
+        #if logger; logger.info "MailHandler: delimiters = #{delimiters.inspect} at #{__FILE__}:#{__LINE__}"; end 
+        unless delimiters.empty?
+          regex = Regexp.new("^[> ]*(#{ delimiters.join('|') })\s*[\r\n].*", Regexp::MULTILINE)
+          body = body.gsub(regex, '') 
+        end 
+      end 
+      body.strip
+    end 
   end
 end
