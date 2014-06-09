@@ -30,7 +30,7 @@ module MailHandlerPatch
     end
 
     def msg_failed_receive(sender, message, email)
-      if logger; logger.info "MailHandler: msg_failed_receive at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): msg_failed_receive at #{__FILE__}:#{__LINE__}"; end 
       m = Mailer
       s = m.async_smtp_settings
       m.delivery_method=:smtp
@@ -39,13 +39,13 @@ module MailHandlerPatch
     end
 
     def receive_with_tsreceive(email)
-      if logger; logger.info "MailHandler: receive_with_tsreceive at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_with_tsreceive at #{__FILE__}:#{__LINE__}"; end 
       @ho = self.class.class_variable_get("@@handler_options")
       @email = email
       sender_email = email.from.to_a.first.to_s.strip
       # Ignore emails received from the application emission address to avoid hell cycles
       if sender_email.downcase == Setting.mail_from.to_s.strip.downcase
-        msg = "MailHandler: ignoring email from Redmine emission address [#{sender_email}] at #{__FILE__}:#{__LINE__}"
+        msg = "MailHandler (pid: #{Process.pid}): ignoring email from Redmine emission address [#{sender_email}] at #{__FILE__}:#{__LINE__}"
         if logger; logger.info msg; end 
         msg_failed_receive(sender_email, msg, @email)
         return false
@@ -56,7 +56,7 @@ module MailHandlerPatch
         if value
           value = value.to_s.downcase
           if (ignored_value.is_a?(Regexp) && value.match(ignored_value)) || value == ignored_value
-            msg = "MailHandler: ignoring email with #{key}:#{value} header at #{__FILE__}:#{__LINE__}"
+            msg = "MailHandler (pid: #{Process.pid}): ignoring email with #{key}:#{value} header at #{__FILE__}:#{__LINE__}"
             if logger; logger.info msg; end
             msg_failed_receive(sender_email, msg, @email)
             return false
@@ -65,7 +65,7 @@ module MailHandlerPatch
       end
       @user = User.find_by_mail(sender_email) if sender_email.present?
       if @user && !@user.active?
-        msg = "MailHandler: ignoring email from non-active user [#{@user.login}] at #{__FILE__}:#{__LINE__}"
+        msg = "MailHandler (pid: #{Process.pid}): ignoring email from non-active user [#{@user.login}] at #{__FILE__}:#{__LINE__}"
         if logger; logger.info msg; end
         msg_failed_receive(sender_email, msg, @email)
         return false
@@ -78,20 +78,20 @@ module MailHandlerPatch
         when 'create'
           @user = create_user_from_email
           if @user
-            if logger; logger.info "MailHandler: [#{@user.login}] account created at #{__FILE__}:#{__LINE__}"; end
+            if logger; logger.info "MailHandler (pid: #{Process.pid}): [#{@user.login}] account created at #{__FILE__}:#{__LINE__}"; end
             add_user_to_group(@ho[:default_group])
             unless @ho[:no_account_notice]
               Mailer.account_information(@user, @user.password).deliver
             end
           else
-            msg = "MailHandler: could not create account for [#{sender_email}] at #{__FILE__}:#{__LINE__}"
+            msg = "MailHandler (pid: #{Process.pid}): could not create account for [#{sender_email}] at #{__FILE__}:#{__LINE__}"
             if logger; logger.info msg; end
             msg_failed_receive(sender_email, msg, @email)
             return false
           end
         else
           # Default behaviour, emails from unknown users are ignored
-          msg = "MailHandler: ignoring email from unknown user [#{sender_email}] at #{__FILE__}:#{__LINE__}"
+          msg = "MailHandler (pid: #{Process.pid}): ignoring email from unknown user [#{sender_email}] at #{__FILE__}:#{__LINE__}"
           if logger; logger.info msg; end
           msg_failed_receive(sender_email, msg, @email)
           return false
@@ -107,49 +107,49 @@ module MailHandlerPatch
 	MESSAGE_REPLY_SUBJECT_RE = MailHandler.const_get(:MESSAGE_REPLY_SUBJECT_RE)
 
     def dispatch_with_tsdispatch
-      if logger; logger.info "MailHandler: dispatch_with_tsdispatch at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_with_tsdispatch at #{__FILE__}:#{__LINE__}"; end 
       headers = [email.in_reply_to, email.references].flatten.compact
       subject = email.subject.to_s
       if headers.detect {|h| h.to_s =~ MESSAGE_ID_RE}
         klass, object_id = $1, $2.to_i
         method_name = "receive_#{klass}_reply"
         if self.class.private_instance_methods.collect(&:to_s).include?(method_name)
-          if logger; logger.info "MailHandler: dispatch: send method_name: #{method_name} object_id #{object_id} at #{__FILE__}:#{__LINE__}"; end
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: send method_name: #{method_name} object_id #{object_id} at #{__FILE__}:#{__LINE__}"; end
           send method_name, object_id
         else
           # ignoring it
         end
-        if logger; logger.info "MailHandler: dispatch: MESSAGE_ID_RE at #{__FILE__}:#{__LINE__}"; end
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_ID_RE at #{__FILE__}:#{__LINE__}"; end
       elsif m = subject.match(ISSUE_REPLY_SUBJECT_RE)
-        if logger; logger.info "MailHandler: dispatch: ISSUE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: ISSUE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
         receive_issue_reply(m[1].to_i)
       elsif m = subject.match(MESSAGE_REPLY_SUBJECT_RE)
-        if logger; logger.info "MailHandler: dispatch: MESSAGE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
         receive_message_reply(m[1].to_i)
       else
-        if logger; logger.info "MailHandler: dispatch_to_default at #{__FILE__}:#{__LINE__}"; end
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_to_default at #{__FILE__}:#{__LINE__}"; end
         dispatch_to_default
       end
     rescue ActiveRecord::RecordInvalid => e
       # TODO: send a email to the user
-      msg = "MailHandler: #{e.message} at #{__FILE__}:#{__LINE__}"
+      msg = "MailHandler (pid: #{Process.pid}): #{e.message} at #{__FILE__}:#{__LINE__}"
       msg_failed_receive(@email.from.to_a.first.to_s.strip, msg, @email)
       if logger; logger.info msg; end
       false
     rescue MissingInformation => e
-      msg = "MailHandler: missing information from #{user}: #{e.message} at #{__FILE__}:#{__LINE__}"
+      msg = "MailHandler (pid: #{Process.pid}): missing information from #{user}: #{e.message} at #{__FILE__}:#{__LINE__}"
       msg_failed_receive(@email.from.to_a.first.to_s.strip, msg, @email)
       if logger; logger.info msg; end
       false
     rescue UnauthorizedAction => e
-      msg = "MailHandler: unauthorized attempt from #{user} at #{__FILE__}:#{__LINE__}"
+      msg = "MailHandler (pid: #{Process.pid}): unauthorized attempt from #{user} at #{__FILE__}:#{__LINE__}"
       msg_failed_receive(@email.from.to_a.first.to_s.strip, msg, @email)
       if logger; logger.info msg; end
       false
     end
 
     def receive_issue_with_tsreceiveissue
-      if logger; logger.info "MailHandler: receive_issue_with_tsreceiveissue at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_issue_with_tsreceiveissue at #{__FILE__}:#{__LINE__}"; end 
       project = target_project
       # check permission
       unless @ho[:no_permission_check]
@@ -169,15 +169,15 @@ module MailHandlerPatch
       add_watchers(issue)
       issue.save!
       add_attachments(issue)
-      if logger; logger.info "MailHandler: issue ##{issue.id} created by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} created by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
       issue
     end
 
     def receive_issue_reply_with_tsreceiveissuereply(issue_id, from_journal=nil)
-      if logger; logger.info "MailHandler: receive_issue_reply_with_tsreceiveissuereply at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_issue_reply_with_tsreceiveissuereply at #{__FILE__}:#{__LINE__}"; end 
       issue = Issue.find_by_id(issue_id)
       unless issue
-        msg = "MailHandler: issue ##{issue.id} does not exists at #{__FILE__}:#{__LINE__}"
+        msg = "MailHandler (pid: #{Process.pid}): issue ##{issue.id} does not exists at #{__FILE__}:#{__LINE__}"
         if logger; logger.info msg; end
         msg_failed_receive(@user.email, msg, @email)
         return
@@ -202,27 +202,27 @@ module MailHandlerPatch
       journal.notes = cleaned_up_text_body
       add_attachments(issue)
       issue.save!
-      if logger; logger.info "MailHandler: issue ##{issue.id} updated by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} updated by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
       journal
     end
 
     def receive_journal_reply_with_tsreceivejournalreply(journal_id)
-      if logger; logger.info "MailHandler: receive_journal_reply_with_tsreceivejournalreply at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_journal_reply_with_tsreceivejournalreply at #{__FILE__}:#{__LINE__}"; end 
       journal = Journal.find_by_id(journal_id)
       if journal 
         if journal.journalized_type == 'Issue'
-          if logger; logger.info "MailHandler: receive_jornal_reply: journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end
           receive_issue_reply(journal.journalized_id, journal)
         else
-          if logger; logger.info "MailHandler: receive_jornal_reply: journal_id: #{journal_id}, jounalized_type != 'Issue' at #{__FILE__}:#{__LINE__}"; end
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id}, jounalized_type != 'Issue' at #{__FILE__}:#{__LINE__}"; end
         end
       else
-        if logger; logger.info "MailHandler: receive_jornal_reply: no journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end 
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: no journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end 
       end
     end
 
     def receive_message_reply_with_tsreceivemessagereply(message_id)
-      if logger; logger.info "MailHandler: receive_message_reply_with_tsreceivemessagereply at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_message_reply_with_tsreceivemessagereply at #{__FILE__}:#{__LINE__}"; end 
       message = Message.find_by_id(message_id)
       if message
         message = message.root
@@ -239,7 +239,7 @@ module MailHandlerPatch
           add_attachments(reply)
           reply
         else
-          msg = "MailHandler: ignoring reply from [#{sender_email}] to a locked topic at #{__FILE__}:#{__LINE__}"
+          msg = "MailHandler (pid: #{Process.pid}): ignoring reply from [#{sender_email}] to a locked topic at #{__FILE__}:#{__LINE__}"
           if logger; logger.info msg; end
           msg_failed_receive(@user.email, msg, @email)
         end
@@ -247,7 +247,7 @@ module MailHandlerPatch
     end
 
     def add_attachments_with_tsaddattachments(obj)
-      if logger; logger.info "MailHandler: add_attachments_with_tsaddattachments at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): add_attachments_with_tsaddattachments at #{__FILE__}:#{__LINE__}"; end 
       if email.attachments && email.attachments.any?
         email.attachments.each do |attachment|
           obj.attachments << Attachment.create(:container => obj,
@@ -272,13 +272,15 @@ module MailHandlerPatch
       #         # * specific project (eg. Setting.mail_handler_target_project)
       target = Project.find_by_identifier(get_keyword(:project))
       if target.nil?
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: target = nil at #{__FILE__}:#{__LINE__}"; end 
         # Invalid project keyword, use the project specified as the default one
         default_project = @ho[:issue][:project]
         if default_project.present?
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: default_project not present at #{__FILE__}:#{__LINE__}"; end 
           target = Project.find_by_identifier(default_project)
         end
       end
-      raise MissingInformation.new("Unable to determine target project: #{:project}") if target.nil?
+      raise MissingInformation.new("Unable to determine target project: project=#{get_keyword(:project)}, default_project=#{@ho[:issue][:project]}, argv=#{ARGV.inspect}") if target.nil?
       target
     end
 
@@ -315,7 +317,7 @@ module MailHandlerPatch
     end
 
     def create_user_from_email_with_tscreateuserfromemail
-      if logger; logger.info "MailHandler: create_user_from_email_with_tscreateuserwithemail at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): create_user_from_email_with_tscreateuserwithemail at #{__FILE__}:#{__LINE__}"; end 
       from = email.header['from'].to_s
       addr, name = from, nil
       if m = from.match(/^"?(.+?)"?\s+<(.+@.+)>$/)
@@ -329,23 +331,23 @@ module MailHandlerPatch
         if user.save
           user
         else
-          if logger; logger.info "MailHandler: failed to create User: #{user.errors.full_messages} at #{__FILE__}:#{__LINE__}"; end
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): failed to create User: #{user.errors.full_messages} at #{__FILE__}:#{__LINE__}"; end
           nil
         end
       else
-        if logger; logger.info "MailHandler: failed to create User: no FROM address found at #{__FILE__}:#{__LINE__}"; end
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): failed to create User: no FROM address found at #{__FILE__}:#{__LINE__}"; end
         nil
       end
     end
 
     def add_user_to_group_with_tsaddusertogroup(default_group)
-      if logger; logger.info "MailHandler: add_user_to_group_with_tsaddusertogroup at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): add_user_to_group_with_tsaddusertogroup at #{__FILE__}:#{__LINE__}"; end 
       if default_group.present?
         default_group.split(',').each do |group_name|
           if group = Group.named(group_name).first
             group.users << @user
           elsif logger
-            logger.info "MailHandler: could not add user to [#{group_name}], group not found at #{__FILE__}:#{__LINE__}"
+            logger.info "MailHandler (pid: #{Process.pid}): could not add user to [#{group_name}], group not found at #{__FILE__}:#{__LINE__}"
           end
         end
       end
@@ -356,7 +358,7 @@ module MailHandlerPatch
       if email.text_part.nil? && email.html_part.nil?
         #if logger; logger.info "MailHandler: email.text_part.nil && email.html_part.nil at #{__FILE__}:#{__LINE__}"; end 
         if @email.header['Content-Type'] && !@email.header['Content-Type'].to_s.match(%r{text/(html|plain)})
-          if logger; logger.info "MailHandler: cleanup_body: Content-Type = #{@email.header['Content-Type']}, body set empty at #{__FILE__}:#{__LINE__}"; end
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): cleanup_body: Content-Type = #{@email.header['Content-Type']}, body set empty at #{__FILE__}:#{__LINE__}"; end
           body = ''
         end
       else
