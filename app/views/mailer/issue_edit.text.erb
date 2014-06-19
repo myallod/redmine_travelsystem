@@ -1,3 +1,7 @@
+<% if @issue.status_id == 3 %>
+<%= l(:text_ts_issue_updated) %>
+<% end if %>
+
 <%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
 
 <% if @journal.notes? -%>

@@ -1,3 +1,7 @@
+<%= Issue.find(@issue.id).status_id %>
+<% if @issue.status_id == 3 %>
+<p style="color: #66dd00; font-size: 18px;"><%= l(:text_ts_issue_updated) %></p>
+<% end if %>
 <%= l(:text_issue_updated, :id => "##{@issue.id}", :author => h(@journal.user)) %>
 
 <%= textilizable(@journal, :notes, :only_path => false) %>

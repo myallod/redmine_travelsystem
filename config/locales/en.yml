@@ -8,4 +8,5 @@ en:
   text_lastname_style: Last Name in Russian
   text_mail_style: Corporate email, if any
   text_plugin_not_usable: "Plugin configuration wrong. Apply patch http://www.redmine.org/attachments/download/8741/0001-Update-config.i18n.load_path-for-plugin-locales.patch"
+  text_ts_issue_updated: "Task required check after completeon"
 
