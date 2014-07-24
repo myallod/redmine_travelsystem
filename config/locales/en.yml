@@ -10,4 +10,5 @@ en:
   text_plugin_not_usable: "Plugin configuration wrong. Apply patch http://www.redmine.org/attachments/download/8741/0001-Update-config.i18n.load_path-for-plugin-locales.patch"
   text_ts_issue_status_resolved: "Task required check after completeon"
   text_ts_issue_status_feedback: "Task is suspended, additional comments from the author are required"
-
+  rate_form_button: "Reopen"
+  rate_form_text: "Close with rate"
