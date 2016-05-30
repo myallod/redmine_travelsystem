@@ -1,0 +1,14 @@
+<p>
+  <%= label_tag 'settings[ts_settings_mailer_log]', raw('Enable mailer log in <span style="color:#ff0000">log/mailer.log</span>') %>
+  <%= check_box_tag 'settings[ts_settings_mailer_log]', 1, @settings[:ts_settings_mailer_log] %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_l4_log]', 'Enable l4 log (NOT REALIZED)' %>
+  <%= check_box_tag 'settings[ts_settings_l4_log]', 1, @settings['ts_settings_l4_log'] %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_verify_ssl_disable]', raw('Disable <span style="color:#ff0000">verify SSL(TLS)</span> at email receive OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+  ') %>
+  <%= check_box_tag 'settings[ts_settings_verify_ssl_disable]', 1, @settings['ts_settings_verify_ssl_disable'] %>
+  <%= link_to_issue(Issue.find_by_id('2736'), :subject => false, :tracker => false) %>
+</p>

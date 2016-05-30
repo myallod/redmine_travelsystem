@@ -1,0 +1,13 @@
+<p>
+  <%= label_tag 'settings[ts_settings_changeauthor]', raw('Enable <span style="color:#ff0000">CHANGEAUTHOR</span> of issue') %>
+  <%= check_box_tag 'settings[ts_settings_changeauthor]', true, @settings['ts_settings_changeauthor'] %>
+  http://www.redmine.org/plugins/redmine_changeauthor (https://github.com/fragtom/Redmine-Changeauthor-Plugin.git)<br>
+  Another choise:<br>
+  http://www.redmine.org/issues/1739<br>
+  https://github.com/mcl-de/redmine_change_issue_author
+</p>
+<p>
+  <%= label_tag "redmine_changeauthor_log_setting", l(:ts_label_authorchange_setlog) %>
+  <%= select_tag 'settings[redmine_changeauthor_log_setting]', options_for_select([['no', 'no'],['yes', 'yes'],], @settings['redmine_changeauthor_log_setting'])  %>  
+  <%=l(:label_authorchange_setlog_description) %> (NOT REALIZED)
+</p>

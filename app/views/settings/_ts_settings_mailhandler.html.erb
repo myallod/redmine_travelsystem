@@ -1,0 +1,25 @@
+<p>
+  <%= label_tag 'settings[ts_settings_actionmailer_log]', raw('Enable mail log in <span style="color:#ff0000">log/actionmailer.log</span>') %>
+  <%= check_box_tag 'settings[ts_settings_actionmailer_log]', 1, @settings[:ts_settings_actionmailer_log] %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_issue_open_by_email]', raw('Enable <span style="color:#ff0000">open issue</span> by email arrival (set status_id=2)') %>
+  <%= check_box_tag 'settings[ts_settings_issue_open_by_email]', 1, @settings['ts_settings_issue_open_by_email'] %>
+  <%= link_to_issue(Issue.find_by_id('15454'), :subject => false, :tracker => false) %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_add_resent_from]', raw('Enable <span style="color:#ff0000">Resent-From</span> add to issue if any') %>
+  <%= check_box_tag 'settings[ts_settings_add_resent_from]', 1, @settings['ts_settings_add_resent_from'] %>
+  <%= link_to_issue(Issue.find_by_id('18503'), :subject => false, :tracker => false) %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_add_anonymous_from]', raw('Enable add <span style="color:#ff0000">From</span> to issue if anonymous author') %>
+  <%= check_box_tag 'settings[ts_settings_add_anonymous_from]', 1, @settings['ts_settings_add_anonymous_from'] %>
+  <%= link_to_issue(Issue.find_by_id('17930'), :subject => false, :tracker => false) %>
+</p>
+<p>
+  <%= label_tag 'settings[ts_settings_message_id_re]', raw('Enable <span style="color:#ff0000">MESSAGE_ID_RE</span> (enabled in redmine, disabled in travelsystem)') %>
+  <%= check_box_tag 'settings[ts_settings_message_id_re]', nil, @settings['ts_settings_message_id_re'] %>
+  <%= link_to_issue(Issue.find_by_id('18622'), :subject => false, :tracker => false) %>
+  <%= link_to_issue(Issue.find_by_id('18835'), :subject => false, :tracker => false) %>
+</p>

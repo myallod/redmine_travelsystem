@@ -1,0 +1,5 @@
+<% tags_tabs = [{:name => 'mailhandler', :partial => 'settings/ts_settings_mailhandler', :label => :ts_label_mailhandler},
+                {:name => 'mailerlogger', :partial => 'settings/ts_settings_mailer', :label => :ts_label_mailer},
+                {:name => 'changauthor', :partial => 'settings/ts_settings_changeauthor', :label => :ts_label_changeauthor}] %>
+<%= render_tabs tags_tabs %>
+<% html_title(l(:label_settings)) -%>
