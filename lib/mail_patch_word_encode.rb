@@ -1,7 +1,7 @@
 require 'mail/fields/common/common_field'
 # encoding: utf-8
 
-module MailPatch
+module MailPatchWordEncode
   def self.included(base)
     base.send(:include, InstanceMethods)
 	base.class_eval do

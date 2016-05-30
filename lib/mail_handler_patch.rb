@@ -110,22 +110,26 @@ module MailHandlerPatch
       if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_with_tsdispatch at #{__FILE__}:#{__LINE__}"; end 
       headers = [email.in_reply_to, email.references].flatten.compact
       subject = email.subject.to_s
-      if headers.detect {|h| h.to_s =~ MESSAGE_ID_RE}
-        klass, object_id = $1, $2.to_i
-        method_name = "receive_#{klass}_reply"
-        if self.class.private_instance_methods.collect(&:to_s).include?(method_name)
-          if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: send method_name: #{method_name} object_id #{object_id} at #{__FILE__}:#{__LINE__}"; end
-          send method_name, object_id
-        else
-          # ignoring it
-        end
-        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_ID_RE at #{__FILE__}:#{__LINE__}"; end
-      elsif m = subject.match(ISSUE_REPLY_SUBJECT_RE)
+      if m = subject.match(ISSUE_REPLY_SUBJECT_RE)
         if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: ISSUE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
         receive_issue_reply(m[1].to_i)
       elsif m = subject.match(MESSAGE_REPLY_SUBJECT_RE)
         if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
         receive_message_reply(m[1].to_i)
+      elsif headers.detect {|h| h.to_s =~ MESSAGE_ID_RE}
+        if Setting['plugin_redmine_travelsystem']['ts_settings_message_id_re']
+          klass, object_id = $1, $2.to_i
+          method_name = "receive_#{klass}_reply"
+          if self.class.private_instance_methods.collect(&:to_s).include?(method_name)
+            if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_ID_RE: send method_name: #{method_name} object_id #{object_id} at #{__FILE__}:#{__LINE__}"; end
+            send method_name, object_id
+          else
+            # ignoring it
+          end
+        else
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch -> dispatch_to_default: MESSAGE_ID_RE disabled in settings at #{__FILE__}:#{__LINE__}"; end
+          dispatch_to_default
+        end
       else
         if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_to_default at #{__FILE__}:#{__LINE__}"; end
         dispatch_to_default
@@ -165,11 +169,23 @@ module MailHandlerPatch
       end
       issue.description = cleaned_up_text_body
 
+      description_add = Array.new
+      if Setting['plugin_redmine_travelsystem']['ts_settings_add_anonymous_from'] && @user.anonymous?
+        description_add << "From: #{email[:from].to_s.strip}\n"
+      end
+
+      if Setting['plugin_redmine_travelsystem']['ts_settings_add_resent_from'] && email[:resent_from]
+        description_add << "Resent-From: #{email[:resent_from].to_s.strip}\n"
+        description_add << "To: #{email[:to].to_s.strip}\n"
+	  end
+      issue.description = "#{description_add.join()}\n\n#{issue.description}"
+
       # add To and Cc as watchers before saving so the watchers can reply to Redmine
       add_watchers(issue)
       issue.save!
       add_attachments(issue)
-      if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} created by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
+      #if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} created by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} created by #{user} (#{email[:from].to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
       issue
     end
 
@@ -201,6 +217,9 @@ module MailHandlerPatch
       issue.safe_attributes = {'custom_field_values' => custom_field_values_from_keywords(issue)}
       journal.notes = cleaned_up_text_body
       add_attachments(issue)
+      if Setting['plugin_redmine_travelsystem']['ts_settings_issue_open_by_email']
+        issue.status_id = 2
+      end
       issue.save!
       if logger; logger.info "MailHandler (pid: #{Process.pid}): issue ##{issue.id} updated by #{user} (#{email.from.to_a.first.to_s.strip}) at #{__FILE__}:#{__LINE__}"; end
       journal
@@ -373,3 +392,7 @@ module MailHandlerPatch
     end 
   end
 end
+
+#ARGV.each do|a|
+#puts "Argument: #{a}"
+#end
