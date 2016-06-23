@@ -6,8 +6,8 @@ module MailerPatch
     base.class_eval do
       unloadable
       alias_method_chain :news_added, :tsnewsadded
-	  alias_method_chain :mylogger, :tsmylogger
-	  alias_method_chain :issue_edit, :tsissueedit
+      alias_method_chain :mylogger, :tsmylogger
+      alias_method_chain :issue_edit, :tsissueedit
     end
   end
 
@@ -20,12 +20,13 @@ module MailerPatch
 	  @eerror = error
 	  attachments['email.msg'] = email.to_s
       mail :to => recipients, :subject => "#{Setting.app_title} MailHandler - #{from}"
-	end
+    end
 
     def news_added_with_tsnewsadded(news)
       redmine_headers 'Project' => news.project.identifier
       @author = news.author
       message_id news
+      references news
       @news = news
       @news_url = url_for(:controller => 'news', :action => 'show', :id => news)
       mail :to => news.project.members.collect {|m| m.user}.collect {|u| u.mail},
@@ -49,22 +50,22 @@ module MailerPatch
       @journal = journal
       @journal_details = journal.visible_details(@users.first)
       @issue_url = url_for(:controller => 'issues', :action => 'show', :id => issue, :anchor => "change-#{journal.id}")
-	  if mylogger
+      if mylogger
         mylogger.info "Mailer (pid: #{Process.pid}): issue_edit_with_tsissueedit; to:#{to_users.map(&:mail)}, cc:#{cc_users.map(&:mail)}, subject: #{s} at #{__FILE__}:#{__LINE__}"
       end
-      mail :to => to_users.map(&:mail),
-       :cc => cc_users.map(&:mail),
+      mail :to => to_users,
+       :cc => cc_users,
        :subject => s
      end
 
     private
-	def mylogger_with_tsmylogger
-      if Setting['plugin_redmine_travelsystem']['ts_settings_actionmailer_log']
-        MAILERLOGGER
-      else
-        Rails.logger
-	  end
-	end
+      def mylogger_with_tsmylogger
+        if Setting['plugin_redmine_travelsystem']['ts_settings_actionmailer_log']
+          MAILERLOGGER
+        else
+          Rails.logger
+        end
+      end
   end
 end
 
