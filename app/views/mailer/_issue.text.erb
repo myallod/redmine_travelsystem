@@ -1,6 +1,18 @@
 <%= "#{issue.tracker.name} ##{issue.id}: #{issue.subject}" %>
 <%= issue_url %>
 
+<% if Redmine::VERSION::MAJOR >=3 %>
+  <%= render_email_issue_attributes(issue, users.first) %>
+----------------------------------------
+  <%= issue.description %>
+
+  <% if issue.attachments.any? -%>
+---<%= l(:label_attachment_plural).ljust(37, '-') %>
+    <% issue.attachments.each do |attachment| -%>
+      <%= attachment.filename %> (<%= number_to_human_size(attachment.filesize) %>)
+    <% end -%>
+  <% end -%>
+<% elsif Redmine::VERSION::MAJOR == 2 %>
 * <%=l(:field_author)%>: <%= issue.author %>
 * <%=l(:field_created_on)%>: <%=h issue.created_on.in_time_zone(issue.author.time_zone).strftime("%Y-%m-%d %H:%M:%S %Z") %>
 * <%=l(:field_status)%>: <%= issue.status %>
@@ -8,7 +20,8 @@
 * <%=l(:field_assigned_to)%>: <%= issue.assigned_to %>
 * <%=l(:field_category)%>: <%= issue.category %>
 * <%=l(:field_fixed_version)%>: <%= issue.fixed_version %>
-<% issue.custom_field_values.each do |c| %>* <%= c.custom_field.name %>: <%= show_value(c) %>
-<% end -%>
+  <% issue.custom_field_values.each do |c| %>* <%= c.custom_field.name %>: <%= show_value(c) %>
+  <% end -%>
 ----------------------------------------
-<%= issue.description %>
+  <%= issue.description %>
+<% end %>

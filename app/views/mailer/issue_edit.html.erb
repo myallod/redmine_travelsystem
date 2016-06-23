@@ -4,42 +4,57 @@
 <p style="color: #dd6600; font-size: 18px;"><%= l(:text_ts_issue_status_feedback) %></p>
 <% end if %>
 
+<div style="display:none">
 <% @nocache = Random.rand(1000) %>
 <% if @issue.status_id == 3 || @issue.status_id == 6 %>
 <table style="border: 1px solid red;border-spacing: 0;border-collapse: collapse;">
-<tr>
-<td style="padding:5px 10px"><p><a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&status_change=1&nocache=<%= @nocache %>"><%= l(:rate_form_button) %></a></p></td>
-<td style="padding:5px 10px;border: 1px solid green"><p><%= l(:rate_form_text) %>: 
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=5&nocache=<%= @nocache %>">[5]</a>
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=4&nocache=<%= @nocache %>">[4]</a>
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=3&nocache=<%= @nocache %>">[3]</a>
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=2&nocache=<%= @nocache %>">[2]</a>
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=1&nocache=<%= @nocache %>">[1]</a>
-</td>
-</tr>
+  <tr>
+    <td style="padding:5px 10px"><p><a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&status_change=1&nocache=<%= @nocache %>"><%= l(:rate_form_button) %></a></p></td>
+    <td style="padding:5px 10px;border: 1px solid green"><p><%= l(:rate_form_text) %>: 
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=5&nocache=<%= @nocache %>">[5]</a>
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=4&nocache=<%= @nocache %>">[4]</a>
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=3&nocache=<%= @nocache %>">[3]</a>
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=2&nocache=<%= @nocache %>">[2]</a>
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&rate_change=1&nocache=<%= @nocache %>">[1]</a>
+    </td>
+  </tr>
 </table>
 <br>
 <% elsif @issue.status_id == 2 %>
 <table style="border: 1px solid red;border-spacing: 0;border-collapse: collapse;">
-<tr>
-<td style="padding:5px 10px;border: 1px solid green"><p>
-<a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&status_change=7&nocache=<%= @nocache %>"><%= l(:text_ts_issue_status_working) %>
-</a>
-</td>
-</tr>
+  <tr>
+    <td style="padding:5px 10px;border: 1px solid green"><p>
+      <a href="http://www.travelsystem.ru/action/redmine/email-submit.php?task=<%= @issue.id %>&status_change=7&nocache=<%= @nocache %>"><%= l(:text_ts_issue_status_working) %></a>
+    </td>
+  </tr>
 </table>
+</div>
 <br>
 <% end if %>
 
-<%= l(:text_issue_updated, :id => "##{@issue.id}", :author => h(@journal.user)) %>
-
-<%= textilizable(@journal, :notes, :only_path => false) %>
+<% if Redmine::VERSION::MAJOR >=3 %>
+  <% if @journal.private_notes? %>
+    (<%= l(:field_private_notes) %>)
+  <% end %>
+  <%= l(:text_issue_updated, :id => "##{@issue.id}", :author => h(@journal.user)) %>
 
 <ul>
-<% details_to_strings(@journal.details, false, :only_path => false).each do |string| %>
+  <% details_to_strings(@journal_details, false, :only_path => false).each do |string| %>
   <li><%= string %></li>
-<% end %>
+  <% end %>
 </ul>
 
+  <%= textilizable(@journal, :notes, :only_path => false) %>
 <hr />
-<%= render :partial => 'issue', :formats => [:html], :locals => { :issue => @issue, :issue_url => @issue_url } %>
+  <%= render :partial => 'issue', :formats => [:html], :locals => { :issue => @issue, :users => @users, :issue_url => @issue_url } %> 
+<% elsif Redmine::VERSION::MAJOR == 2 %>
+  <%= l(:text_issue_updated, :id => "##{@issue.id}", :author => h(@journal.user)) %>
+  <%= textilizable(@journal, :notes, :only_path => false) %>
+<ul>
+  <% details_to_strings(@journal.details, false, :only_path => false).each do |string| %>
+  <li><%= string %></li>
+  <% end %>
+</ul>
+<hr />
+  <%= render :partial => 'issue', :formats => [:html], :locals => { :issue => @issue, :issue_url => @issue_url } %>
+<% end %>

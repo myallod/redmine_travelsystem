@@ -4,15 +4,28 @@
 <%= l(:text_ts_issue_status_feedback) %>
 <% end if %>
 
-<%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
+<% if Redmine::VERSION::MAJOR >=3 %>
+  <%= "(#{l(:field_private_notes)}) " if @journal.private_notes? -%><%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
 
-<% if @journal.notes? -%>
-<%= @journal.notes %>
+  <% details_to_strings(@journal_details, true).each do |string| -%>
+    <%= string %>
+  <% end -%>
 
-<% end -%>
-
-<% details_to_strings(@journal.details, true).each do |string| -%>
-<%= string %>
-<% end -%>
+  <% if @journal.notes? -%>
+    <%= @journal.notes %>
+  <% end -%>
 ----------------------------------------
-<%= render :partial => 'issue', :formats => [:text], :locals => { :issue => @issue, :issue_url => @issue_url } %>
+  <%= render :partial => 'issue', :formats => [:text], :locals => { :issue => @issue, :users => @users, :issue_url => @issue_url } %>
+<% elsif Redmine::VERSION::MAJOR == 2 %>
+  <%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
+
+  <% if @journal.notes? -%>
+    <%= @journal.notes %>
+  <% end -%>
+
+  <% details_to_strings(@journal.details, true).each do |string| -%>
+    <%= string %>
+  <% end -%>
+----------------------------------------
+  <%= render :partial => 'issue', :formats => [:text], :locals => { :issue => @issue, :issue_url => @issue_url } %>
+<% end %>
