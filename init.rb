@@ -2,7 +2,7 @@ Redmine::Plugin.register :redmine_travelsystem do
   name 'Redmine Travelsystem plugin'
   author 'lek'
   description 'Patches for Redmine'
-  version '0.0.5'
+  version '0.0.6'
   url 'http://travelsystem.ru'
   author_url 'http://travelsystem.ru'
   requires_redmine :version_or_higher => '2.4.0'
@@ -27,23 +27,23 @@ Redmine::Plugin.register :redmine_travelsystem do
       OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
     end
 
-
-    #Логгирование писем ActionMailer::Base.logger
+    #Р›РѕРіРіРёСЂРѕРІР°РЅРёРµ РїРёСЃРµРј ActionMailer::Base.logger
     if Setting['plugin_redmine_travelsystem']['ts_settings_actionmailer_log']
       require 'actionmailer_logger'
     end
 
-	#Логгирование событий класса Mailer (app/models/mailer.rb)
+    #Р›РѕРіРіРёСЂРѕРІР°РЅРёРµ СЃРѕР±С‹С‚РёР№ РєР»Р°СЃСЃР° Mailer (app/models/mailer.rb)
     if Setting['plugin_redmine_travelsystem']['ts_settings_mailer_log']
       require 'mailer_logger'
     end
-    #Добавлена функция отправки MailHandler при ошибке приёма письма
-    #Исправлена функция news_added - рассылка новости для всех пользователей, даже тех, кто не подписан получать что-либо
+
+    #Р”РѕР±Р°РІР»РµРЅР° С„СѓРЅРєС†РёСЏ РѕС‚РїСЂР°РІРєРё MailHandler РїСЂРё РѕС€РёР±РєРµ РїСЂРёС‘РјР° РїРёСЃСЊРјР°
+    #РСЃРїСЂР°РІР»РµРЅР° С„СѓРЅРєС†РёСЏ news_added - СЂР°СЃСЃС‹Р»РєР° РЅРѕРІРѕСЃС‚Рё РґР»СЏ РІСЃРµС… РїРѕР»СЊР·РѕРІР°С‚РµР»РµР№, РґР°Р¶Рµ С‚РµС…, РєС‚Рѕ РЅРµ РїРѕРґРїРёСЃР°РЅ РїРѕР»СѓС‡Р°С‚СЊ С‡С‚Рѕ-Р»РёР±Рѕ
     require 'mailer_patch'
     Mailer.send :include, MailerPatch
     #require 'activerecord_logger'
 
-    #Логгирование уровня SMTP
+    #Р›РѕРіРіРёСЂРѕРІР°РЅРёРµ СѓСЂРѕРІРЅСЏ SMTP
     if Setting['plugin_redmine_travelsystem']['ts_settings_l4_log']
       require 'mail_logger'
       require 'mail_patch_logger'
@@ -53,26 +53,23 @@ Redmine::Plugin.register :redmine_travelsystem do
     require 'projects_helper_patch'
     ProjectsHelper.send :include, ProjectsHelperPatch
 
-
-    #Патчи для приёма письма через почту
+    #РџР°С‚С‡Рё РґР»СЏ РїСЂРёС‘РјР° РїРёСЃСЊРјР° С‡РµСЂРµР· РїРѕС‡С‚Сѓ
     require 'mail_handler_patch'
     MailHandler.send :include, MailHandlerPatch 
-
 
     require 'issue_statuses_controller_patch'
     IssueStatusesController.send :include, IssueStatusesControllerPatch
 
-
-    #Патч mail gem 2.5.4 https://github.com/mikel/mail 2.5.4
-	#Устраняет проблему с обрезанным заголовком Subject
+    #РџР°С‚С‡ mail gem 2.5.4 https://github.com/mikel/mail 2.5.4
+    #РЈСЃС‚СЂР°РЅСЏРµС‚ РїСЂРѕР±Р»РµРјСѓ СЃ РѕР±СЂРµР·Р°РЅРЅС‹Рј Р·Р°РіРѕР»РѕРІРєРѕРј Subject
     if Mail::VERSION.version == "2.5.4"
       require "mail_patch_word_encode"
       Mail::UnstructuredField.send :include, MailPatchWordEncode
-	  #require 'mail_patch_subject_decode'
-	  #Mail::Encodings.send :include, MailPatchSubjectDecode
+      require 'mail_patch_subject_decode'
+      Mail::Encodings.send :include, MailPatchSubjectDecode
     end
 
-	require 'custom_logger'
-	require 'patches'
+    require 'custom_logger'
+    require 'patches'
   end
 end
