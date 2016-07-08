@@ -6,8 +6,8 @@
   #get 'change_issue_text_after', on: :collection
 #end
 RedmineApp::Application.routes.draw do
-  match '/changeauthor/index', :to => 'changeauthor#index'
-  match '/changeauthor/edit', :to => 'changeauthor#edit'
+  get '/changeauthor/index', :to => 'changeauthor#index'
+  get '/changeauthor/edit', :to => 'changeauthor#edit'
 end 
 
 get '/issue_statuses/:id/change_issue_text_after', to: 'issue_statuses#change_issue_text_after', as: 'change_issue_text_after_issue_statuses'
