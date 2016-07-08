@@ -3,21 +3,21 @@ require_dependency 'mail_handler'
 module MailHandlerPatch
   def self.included(base)
     base.send(:include, InstanceMethods)
-	base.class_eval do
+    base.class_eval do
       unloadable
       alias_method_chain :logger, :tslogger
-      alias_method_chain :receive, :tsreceive
-      alias_method_chain :dispatch, :tsdispatch
-      alias_method_chain :receive_issue, :tsreceiveissue
-      alias_method_chain :receive_issue_reply, :tsreceiveissuereply
-      alias_method_chain :receive_journal_reply, :tsreceivejournalreply
-      alias_method_chain :receive_message_reply, :tsreceivemessagereply
+      #alias_method_chain :receive, :tsreceive
+      #alias_method_chain :dispatch, :tsdispatch
+      #alias_method_chain :receive_issue, :tsreceiveissue
+      #alias_method_chain :receive_issue_reply, :tsreceiveissuereply
+      #alias_method_chain :receive_journal_reply, :tsreceivejournalreply
+      #alias_method_chain :receive_message_reply, :tsreceivemessagereply
       alias_method_chain :add_attachments, :tsaddattachments
-      alias_method_chain :plain_text_body, :tsplaintextbody
-      alias_method_chain :cleanup_body, :tscleanupbody
-      alias_method_chain :create_user_from_email, :tscreateuserfromemail
-      alias_method_chain :add_user_to_group, :tsaddusertogroup
-      alias_method_chain :target_project, :tstargetproject
+      #alias_method_chain :plain_text_body, :tsplaintextbody
+      #alias_method_chain :cleanup_body, :tscleanupbody
+      #alias_method_chain :create_user_from_email, :tscreateuserfromemail
+      #alias_method_chain :add_user_to_group, :tsaddusertogroup
+      #alias_method_chain :target_project, :tstargetproject
     end
   end
 
@@ -38,13 +38,17 @@ module MailHandlerPatch
       m.failed_receive(sender, ARGV[ARGV.index { |b| b if b.include?('project=')}], message, email).deliver
     end
 
-    def receive_with_tsreceive(email)
+    def receive_with_tsreceive(email, options={})
       if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_with_tsreceive at #{__FILE__}:#{__LINE__}"; end 
-      @ho = self.class.class_variable_get("@@handler_options")
+      if Redmine::VERSION::MAJOR >=3 
+        @ho = options
+      elsif Redmine::VERSION::MAJOR == 2
+        @ho = self.class.class_variable_get("@@handler_options")
+      end
       @email = email
       sender_email = email.from.to_a.first.to_s.strip
       # Ignore emails received from the application emission address to avoid hell cycles
-      if sender_email.downcase == Setting.mail_from.to_s.strip.downcase
+      if sender_email.casecmp(Setting.mail_from.to_s.strip) == 0
         msg = "MailHandler (pid: #{Process.pid}): ignoring email from Redmine emission address [#{sender_email}] at #{__FILE__}:#{__LINE__}"
         if logger; logger.info msg; end 
         msg_failed_receive(sender_email, msg, @email)
@@ -103,20 +107,14 @@ module MailHandlerPatch
 
     private
     MESSAGE_ID_RE = MailHandler.const_get(:MESSAGE_ID_RE)
-	ISSUE_REPLY_SUBJECT_RE = MailHandler.const_get(:ISSUE_REPLY_SUBJECT_RE)
-	MESSAGE_REPLY_SUBJECT_RE = MailHandler.const_get(:MESSAGE_REPLY_SUBJECT_RE)
+    ISSUE_REPLY_SUBJECT_RE = MailHandler.const_get(:ISSUE_REPLY_SUBJECT_RE)
+    MESSAGE_REPLY_SUBJECT_RE = MailHandler.const_get(:MESSAGE_REPLY_SUBJECT_RE)
 
     def dispatch_with_tsdispatch
       if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_with_tsdispatch at #{__FILE__}:#{__LINE__}"; end 
       headers = [email.in_reply_to, email.references].flatten.compact
       subject = email.subject.to_s
-      if m = subject.match(ISSUE_REPLY_SUBJECT_RE)
-        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: ISSUE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
-        receive_issue_reply(m[1].to_i)
-      elsif m = subject.match(MESSAGE_REPLY_SUBJECT_RE)
-        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
-        receive_message_reply(m[1].to_i)
-      elsif headers.detect {|h| h.to_s =~ MESSAGE_ID_RE}
+      if headers.detect {|h| h.to_s =~ MESSAGE_ID_RE}
         if Setting['plugin_redmine_travelsystem']['ts_settings_message_id_re']
           klass, object_id = $1, $2.to_i
           method_name = "receive_#{klass}_reply"
@@ -124,12 +122,18 @@ module MailHandlerPatch
             if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_ID_RE: send method_name: #{method_name} object_id #{object_id} at #{__FILE__}:#{__LINE__}"; end
             send method_name, object_id
           else
-            # ignoring it
-          end
-        else
+	    #ignoring it
+	  end
+	else
           if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch -> dispatch_to_default: MESSAGE_ID_RE disabled in settings at #{__FILE__}:#{__LINE__}"; end
           dispatch_to_default
-        end
+	end
+      elsif m = subject.match(ISSUE_REPLY_SUBJECT_RE)
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: ISSUE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
+        receive_issue_reply(m[1].to_i)
+      elsif m = subject.match(MESSAGE_REPLY_SUBJECT_RE)
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch: MESSAGE_REPLY_SUBJECT_RE at #{__FILE__}:#{__LINE__}"; end
+        receive_message_reply(m[1].to_i)
       else
         if logger; logger.info "MailHandler (pid: #{Process.pid}): dispatch_to_default at #{__FILE__}:#{__LINE__}"; end
         dispatch_to_default
@@ -177,8 +181,10 @@ module MailHandlerPatch
       if Setting['plugin_redmine_travelsystem']['ts_settings_add_resent_from'] && email[:resent_from]
         description_add << "Resent-From: #{email[:resent_from].to_s.strip}\n"
         description_add << "To: #{email[:to].to_s.strip}\n"
-	  end
+      end
       issue.description = "#{description_add.join()}\n\n#{issue.description}"
+      issue.start_date ||= Date.today if Setting.default_issue_start_date_to_creation_date?
+      issue.is_private = (@ho[:issue][:is_private] == '1')
 
       # add To and Cc as watchers before saving so the watchers can reply to Redmine
       add_watchers(issue)
@@ -200,7 +206,8 @@ module MailHandlerPatch
       end
       # check permission
       unless @ho[:no_permission_check]
-        unless user.allowed_to?(:add_issue_notes, issue.project) || user.allowed_to?(:edit_issues, issue.project)
+        unless user.allowed_to?(:add_issue_notes, issue.project) ||
+                 user.allowed_to?(:edit_issues, issue.project)
           raise UnauthorizedAction
         end
       end
@@ -228,15 +235,11 @@ module MailHandlerPatch
     def receive_journal_reply_with_tsreceivejournalreply(journal_id)
       if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_journal_reply_with_tsreceivejournalreply at #{__FILE__}:#{__LINE__}"; end 
       journal = Journal.find_by_id(journal_id)
-      if journal 
-        if journal.journalized_type == 'Issue'
-          if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end
-          receive_issue_reply(journal.journalized_id, journal)
-        else
-          if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id}, jounalized_type != 'Issue' at #{__FILE__}:#{__LINE__}"; end
-        end
+      if journal && journal.journalized_type == 'Issue'
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end
+        receive_issue_reply(journal.journalized_id, journal)
       else
-        if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: no journal_id: #{journal_id} at #{__FILE__}:#{__LINE__}"; end 
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): receive_jornal_reply: journal_id: #{journal_id}, jounalized_type != 'Issue' at #{__FILE__}:#{__LINE__}"; end
       end
     end
 
@@ -251,7 +254,8 @@ module MailHandlerPatch
         end
 
         if !message.locked?
-          reply = Message.new(:subject => cleaned_up_subject.gsub(%r{^.*msg\d+\]}, '').strip, :content => cleaned_up_text_body)
+          reply = Message.new(:subject => cleaned_up_subject.gsub(%r{^.*msg\d+\]}, '').strip,
+                              :content => cleaned_up_text_body)
           reply.author = user
           reply.board = message.board
           message.children << reply
@@ -286,16 +290,18 @@ module MailHandlerPatch
     end
 
     def target_project_with_tstargetproject
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject at #{__FILE__}:#{__LINE__}"; end 
       # TODO: other ways to specify project:
-      #     # * parse the email To field
-      #         # * specific project (eg. Setting.mail_handler_target_project)
-      target = Project.find_by_identifier(get_keyword(:project))
+      # * parse the email To field
+      # * specific project (eg. Setting.mail_handler_target_project)
+      target = get_project_from_receiver_addresses
+      target ||= Project.find_by_identifier(get_keyword(:project))
       if target.nil?
-        if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: target = nil at #{__FILE__}:#{__LINE__}"; end 
         # Invalid project keyword, use the project specified as the default one
+        if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: target = nil at #{__FILE__}:#{__LINE__}"; end 
         default_project = @ho[:issue][:project]
         if default_project.present?
-          if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: default_project not present at #{__FILE__}:#{__LINE__}"; end 
+          if logger; logger.info "MailHandler (pid: #{Process.pid}): target_project_with_tstargetproject: default_project present at #{__FILE__}:#{__LINE__}"; end 
           target = Project.find_by_identifier(default_project)
         end
       end
@@ -304,6 +310,7 @@ module MailHandlerPatch
     end
 
     def plain_text_body_with_tsplaintextbody
+      if logger; logger.info "MailHandler (pid: #{Process.pid}): plain_text_body_with_tsplaintextbody at #{__FILE__}:#{__LINE__}"; end 
       return @plain_text_body unless @plain_text_body.nil?
 
       parts = if (text_parts = email.all_parts.select {|p| p.mime_type == 'text/plain'}).present?
@@ -315,22 +322,23 @@ module MailHandlerPatch
               end
 
       parts.reject! do |part|
-        part.header[:content_disposition].try(:disposition_type) == 'attachment'
+        part.attachment?
       end
 
-	  @plain_text_body = parts.map do |p|
-	    body_charset = p.charset.respond_to?(:force_encoding) ?
-	      Mail::RubyVer.pick_encoding(p.charset).to_s : p.charset
+      @plain_text_body = parts.map do |p|
+        body_charset = Mail::RubyVer.respond_to?(:pick_encoding) ?
+                         Mail::RubyVer.pick_encoding(p.charset).to_s : p.charset
         #body_charset = 'CP949' if body_charset == 'ks_c_5601-1987'
-	    Redmine::CodesetUtil.to_utf8(p.body.decoded, body_charset)
-	  end.join("\r\n")
-
+        body = Redmine::CodesetUtil.to_utf8(p.body.decoded, body_charset)
+        # convert html parts to text
+        p.mime_type == 'text/html' ? self.class.html_body_to_text(body) : self.class.plain_text_body_to_text(body)
+      end.join("\r\n")
 
       # strip html tags and remove doctype directive
-      if parts.any? {|p| p.mime_type == 'text/html'}
-        @plain_text_body = strip_tags(@plain_text_body.strip)
-        @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
-      end
+      #if parts.any? {|p| p.mime_type == 'text/html'}
+      #  @plain_text_body = strip_tags(@plain_text_body.strip)
+      #  @plain_text_body.sub! %r{^<!DOCTYPE .*$}, ''
+      #end
 
       @plain_text_body
     end
@@ -373,7 +381,7 @@ module MailHandlerPatch
     end
 
     def cleanup_body_with_tscleanupbody(body)
-      #if logger; logger.info "MailHandler: cleanup_body_with_tscleanupbody: body = #{body} at #{__FILE__}:#{__LINE__}"; end 
+      if logger; logger.info "MailHandler: cleanup_body_with_tscleanupbody: body = #{body} at #{__FILE__}:#{__LINE__}"; end 
       if email.text_part.nil? && email.html_part.nil?
         #if logger; logger.info "MailHandler: email.text_part.nil && email.html_part.nil at #{__FILE__}:#{__LINE__}"; end 
         if @email.header['Content-Type'] && !@email.header['Content-Type'].to_s.match(%r{text/(html|plain)})
