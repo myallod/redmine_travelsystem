@@ -1,9 +1,3 @@
-<% if @issue.status_id == 3 %>
-<%= l(:text_ts_issue_status_resolved) %>
-<% elsif @issue.status_id == 6 %>
-<%= l(:text_ts_issue_status_feedback) %>
-<% end if %>
-
 <% if Redmine::VERSION::MAJOR >=3 %>
   <%= "(#{l(:field_private_notes)}) " if @journal.private_notes? -%><%= l(:text_issue_updated, :id => "##{@issue.id}", :author => @journal.user) %>
 
