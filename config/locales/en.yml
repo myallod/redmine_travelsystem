@@ -8,8 +8,6 @@ en:
   text_lastname_style: Last Name in Russian
   text_mail_style: Corporate email, if any
   text_plugin_not_usable: "Plugin configuration wrong. Apply patch http://www.redmine.org/attachments/download/8741/0001-Update-config.i18n.load_path-for-plugin-locales.patch"
-  rate_form_button: "Reopen"
-  rate_form_text: "Close with rate"
   button_authorchange: "Change Author"
   label_authorchange: "Current Author is "
   head_authorchange: "Change current Author to "
