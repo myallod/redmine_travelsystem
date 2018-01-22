@@ -22,26 +22,47 @@
   <div class="wiki">
     <%= textilizable @project.description %>
   </div>
-  <% end %>
-  <% if @project.homepage.present? || @subprojects.any? || @project.visible_custom_field_values.any?(&:present?) %>
-  <ul>
-  <% unless @project.homepage.blank? %>
-    <li><span class="label"><%=l(:field_homepage)%>:</span> <%= link_to @project.homepage, @project.homepage %></li>
-  <% end %>
-  <% if @subprojects.any? %>
-    <li><span class="label"><%=l(:label_subproject_plural)%>:</span>
-      <%= @subprojects.collect{|p| link_to p, project_path(p)}.join(", ").html_safe %></li>
-  <% end %>
-  <% render_custom_field_values(@project) do |custom_field, formatted| %>
-    <li><span class="label"><%= custom_field.name %>:</span> <%= formatted %></li>
-  <% end %>
-  </ul>
-  <% end %>
+  <% end
 
-  <% if User.current.allowed_to?(:view_issues, @project) %>
+     if Redmine::VERSION.to_s < '3.4'
+       if @project.homepage.present? || @subprojects.any? || @project.visible_custom_field_values.any?(&:present?) %>
+  <ul>
+      <% unless @project.homepage.blank? %>
+    <li><span class="label"><%=l(:field_homepage)%>:</span> <%= link_to @project.homepage, @project.homepage %></li>
+      <% end %>
+      <% if @subprojects.any? %>
+    <li><span class="label"><%=l(:label_subproject_plural)%>:</span>
+       <%= @subprojects.collect{|p| link_to p, project_path(p)}.join(", ").html_safe %></li>
+      <% end %>
+      <% render_custom_field_values(@project) do |custom_field, formatted| %>
+    <li><span class="label"><%= custom_field.name %>:</span> <%= formatted %></li>
+      <% end %>
+  </ul>
+    <% end
+
+     elsif Redmine::VERSION.to_s >= '3.4'
+
+       if @project.homepage.present? || @project.visible_custom_field_values.any?(&:present?) %>
+  <ul>
+      <% unless @project.homepage.blank? %>
+    <li><span class="label"><%=l(:field_homepage)%>:</span> <%= link_to_if uri_with_safe_scheme?(@project.homepage), @project.homepage, @project.homepage %></li>
+      <% end %>
+      <% render_custom_field_values(@project) do |custom_field, formatted| %>
+    <li><span class="label"><%= custom_field.name %>:</span> <%= formatted %></li>
+      <% end %>
+  </ul>
+    <% end
+     end
+
+     if User.current.allowed_to?(:view_issues, @project) %>
   <div class="issues box">
+    <% if Redmine::VERSION.to_s < '3.4' %>
     <h3><%=l(:label_issue_tracking)%></h3>
-    <% if @trackers.present? %>
+    <% elsif Redmine::VERSION.to_s >= '3.4' %>
+    <h3 class="icon icon-issue"><%=l(:label_issue_tracking)%></h3>
+    <% end
+
+     if @trackers.present? %>
     <table class="list issue-report">
       <thead>
         <tr>
@@ -53,7 +74,12 @@
       </thead>
       <tbody>
       <% @trackers.each do |tracker| %>
+
+        <% if Redmine::VERSION.to_s < '3.4' %>
         <tr class="<%= cycle("odd", "even") %>">
+        <% elsif Redmine::VERSION.to_s >= '3.4' %>
+        <tr>
+        <% end %>
           <td class="name">
             <%= link_to tracker.name, project_issues_path(@project, :set_filter => 1, :tracker_id => tracker.id) %>
           </td>
@@ -63,7 +89,13 @@
           <td>
             <%= link_to (@total_issues_by_tracker[tracker].to_i - @open_issues_by_tracker[tracker].to_i), project_issues_path(@project, :set_filter => 1, :tracker_id => tracker.id, :status_id => 'c') %>
           </td>
+
+        <% if Redmine::VERSION.to_s < '3.4' %>
           <td>
+        <% elsif Redmine::VERSION.to_s >= '3.4' %>
+          <td class="total">
+        <% end %>
+
             <%= link_to @total_issues_by_tracker[tracker].to_i, project_issues_path(@project, :set_filter => 1, :tracker_id => tracker.id, :status_id => '*') %>
           </td>
         </tr>
@@ -82,6 +114,24 @@
     </p>
   </div>
   <% end %>
+
+  <% if Redmine::VERSION.to_s >= '3.4' %>
+    <% if User.current.allowed_to?(:view_time_entries, @project) %>
+  <div class="spent_time box">
+    <h3 class="icon icon-time"><%= l(:label_spent_time) %></h3>
+      <% if @total_hours.present? %>
+      <p><%= l_hours(@total_hours) %></p>
+      <% end %>
+    <p>
+      <% if User.current.allowed_to?(:log_time, @project) %>
+       <%= link_to l(:button_log_time), new_project_time_entry_path(@project) %> |
+      <% end %>
+       <%= link_to(l(:label_details), project_time_entries_path(@project)) %> |
+       <%= link_to(l(:label_report), report_project_time_entries_path(@project)) %>
+    </p>
+  </div>
+    <% end
+     end %>
   <%= call_hook(:view_projects_show_left, :project => @project) %>
 </div>
 
@@ -90,17 +140,38 @@
 
   <% if @news.any? && authorize_for('news', 'index') %>
   <div class="news box">
+
+    <% if Redmine::VERSION.to_s < '3.4' %>
     <h3><%=l(:label_news_latest)%></h3>
+    <% elsif Redmine::VERSION.to_s >= '3.4' %>
+    <h3 class="icon icon-news"><%=l(:label_news_latest)%></h3>
+    <% end %>
+
     <%= render :partial => 'news/news', :collection => @news %>
     <p><%= link_to l(:label_news_view_all), project_news_index_path(@project) %></p>
   </div>
-  <% end %>
+  <% end 
+
+     if Redmine::VERSION.to_s >= '3.4' %>
+    <% if @subprojects.any? %>
+  <div class="projects box">
+    <h3 class="icon icon-projects"><%=l(:label_subproject_plural)%></h3>
+      <%= @subprojects.collect{|p| link_to p, project_path(p), :class => p.css_classes}.join(", ").html_safe %>
+  </div>
+    <% end
+     end %>
+
   <%= call_hook(:view_projects_show_right, :project => @project) %>
 </div>
 
 <% content_for :sidebar do %>
-  <%= render :partial => 'projects/sidebar' %>
-<% end %>
+
+  <% if Redmine::VERSION.to_s < '3.4' %>
+   <%= render :partial => 'projects/sidebar' %>
+  <% elsif Redmine::VERSION.to_s >= '3.4' %>
+   <%= call_hook(:view_projects_show_sidebar_bottom, :project => @project) %>
+  <% end
+   end %>
 
 <% content_for :header_tags do %>
 <%= auto_discovery_link_tag(:atom, {:controller => 'activities', :action => 'index', :id => @project, :format => 'atom', :key => User.current.rss_key}) %>
