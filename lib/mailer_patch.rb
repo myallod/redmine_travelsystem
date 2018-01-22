@@ -7,6 +7,7 @@ module MailerPatch
       unloadable
       alias_method_chain :news_added, :tsnewsadded
       alias_method_chain :mylogger, :tsmylogger
+      alias_method_chain :issue_add, :tsissueadd
       alias_method_chain :issue_edit, :tsissueedit
     end
   end
@@ -33,6 +34,24 @@ module MailerPatch
         :subject => "[#{news.project.name}] #{l(:label_news)}: #{news.title}"
     end
 
+    #Builds a mail for notifying to_users and cc_users about a new issue
+    def issue_add_with_tsissueadd(issue, to_users, cc_users)
+      redmine_headers 'Project' => issue.project.identifier,
+                      'Issue-Id' => issue.id,
+                      'Issue-Author' => issue.author.login
+      redmine_headers 'Issue-Assignee' => issue.assigned_to.login if issue.assigned_to
+      message_id issue
+      references issue
+      @author = issue.author
+      @issue = issue
+      @users = to_users + cc_users
+      @issue_url = url_for(:controller => 'issues', :action => 'show', :id => issue)
+      mail :to => to_users,
+        :cc => cc_users,
+        :subject => "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] #{issue.subject}"
+    end
+	
+
     def issue_edit_with_tsissueedit(journal, to_users, cc_users)
       issue = journal.journalized
       redmine_headers 'Project' => issue.project.identifier,
@@ -42,9 +61,7 @@ module MailerPatch
       message_id journal
       references issue
       @author = journal.user
-      s = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] "
-      s << "(#{issue.status.name}) " if journal.new_value_for('status_id')
-      s << issue.subject
+      s = "[#{issue.project.name} - #{issue.tracker.name} ##{issue.id}] #{issue.subject}"
       @issue = issue
       @users = to_users + cc_users
       @journal = journal

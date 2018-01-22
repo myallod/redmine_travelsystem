@@ -2,7 +2,7 @@ Redmine::Plugin.register :redmine_travelsystem do
   name 'Redmine Travelsystem plugin'
   author 'lek'
   description 'Patches for Redmine'
-  version '0.0.6'
+  version '0.0.7'
   url 'http://travelsystem.ru'
   author_url 'http://travelsystem.ru'
   requires_redmine :version_or_higher => '2.4.0'
@@ -24,7 +24,9 @@ Redmine::Plugin.register :redmine_travelsystem do
 
   Rails.configuration.to_prepare do
     if Setting['plugin_redmine_travelsystem']['ts_settings_verify_ssl_disable']
-      OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+      silence_warnings do
+        OpenSSL::SSL::VERIFY_PEER = OpenSSL::SSL::VERIFY_NONE
+      end
     end
 
     #Логгирование писем ActionMailer::Base.logger
